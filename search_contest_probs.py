@@ -44,18 +44,26 @@ def save_problems_to_excel(problems_by_div, contests_by_div, filename="problems_
             data = []
             for problem in problems:
                 contest_name = contest_names.get(problem['contestId'], 'Unknown Contest')
+                problem_id = f"{problem['contestId']}{problem['index']}"
+                problem_link = f'https://codeforces.com/contest/{problem["contestId"]}/problem/{problem["index"]}'
                 data.append({
                     'Contest Name': contest_name,
-                    'Problem Name': problem['name'],
+                    'Problem ID': problem_id,
                     'Rating': problem.get('rating', 'Unrated'),
-                    'Tags': ', '.join(problem.get('tags', [])),
-                    'Problem Link': f'=HYPERLINK("https://codeforces.com/contest/{problem["contestId"]}/problem/{problem["index"]}")'
+                    'Problem Title': f'=HYPERLINK("{problem_link}", "{problem["name"]}")',
+                    'Tags': ', '.join(problem.get('tags', []))
                 })
+                
+            # Recent problems first, A before B
             df = pd.DataFrame(data)
+            df['Contest ID'] = df['Problem ID'].str.extract(r'(\d+)').astype(int)
+            df['Problem Index'] = df['Problem ID'].str.extract(r'(\D+)$')
+            df = df.sort_values(by=['Contest ID', 'Problem Index'], ascending=[False, True])
+            df = df.drop(columns=['Contest ID', 'Problem Index'])
             df.to_excel(writer, sheet_name=f"Div {div}", index=False)
 
 def main():
-    divs = [2, 3]
+    divs = [3, 4]
     
     # Fetch contests by division
     contests_by_div = get_contests(divs)
